@@ -1,0 +1,24 @@
+# ─────────────────────────────────────────────
+# Medical Image Denoising Pipeline — config.yaml
+# ─────────────────────────────────────────────
+
+model:
+  initial_filters: 32          # Base number of conv filters in AutoEncoder
+
+training:
+  num_epochs: 50
+  batch_size: 8
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  lr_step_size: 10             # Halve LR every N epochs
+
+paths:
+  train_data_dir: datasets/raw/synthetic_medical   # Training images
+  val_data_dir:   datasets/raw/synthetic_medical   # Validation images (use CBSD68 when available)
+  results_dir:    results/
+  logs_dir:       logs/
+
+data:
+  image_size: 256
+  noise_std: 25                # Gaussian noise std dev added during preprocessing
+  num_workers: 4
