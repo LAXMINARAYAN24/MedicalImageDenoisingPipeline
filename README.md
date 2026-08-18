@@ -39,9 +39,13 @@ MedicalImageDenoisingPipeline/
 
 ## ⚡ Quick Start
 
-### 1. Setup Environment (Python 3.12 Recommended)
+### 1. Clone & Setup Environment (Python 3.12 Recommended)
 
 ```bash
+# Clone the repository
+git clone https://github.com/LAXMINARAYAN24/MedicalImageDenoisingPipeline.git
+cd MedicalImageDenoisingPipeline
+
 # Create & activate virtual environment (Python 3.12)
 python -m venv venv
 venv\Scripts\activate          # Windows
@@ -51,7 +55,14 @@ venv\Scripts\activate          # Windows
 pip install -r requirements.txt
 ```
 
-### 2. Pretrained Models Ready Out-of-the-Box 🚀
+### 2. Generate Synthetic Dataset (For Testing)
+
+```bash
+python datasets/generate_synthetic.py
+```
+> This creates **500 synthetic medical-like PNG images** in `datasets/raw/synthetic_medical/`. You can also use your own grayscale medical scans.
+
+### 3. Pretrained Models Ready Out-of-the-Box 🚀
 
 Pretrained weights are included in the repository under [`logs/`](file:///c:/Users/sahul/Desktop/MedicalImageDenoisingPipeline/logs):
 * **Denoiser Checkpoint:** `logs/autoencoder_best_psnr_17.69.pth` (**17.69 dB PSNR**)
@@ -59,7 +70,7 @@ Pretrained weights are included in the repository under [`logs/`](file:///c:/Use
 
 You do **not** need to retrain models to test inference or run evaluation!
 
-### 3. Run Full End-to-End Inference Pipeline
+### 4. Run Full End-to-End Inference Pipeline
 
 Run denoising and classification on any medical image directly via CLI:
 
@@ -79,7 +90,7 @@ result = pipeline.run('datasets/raw/synthetic_medical/image_0000.png')
 pipeline.save_result(result, output_dir='results/')
 ```
 
-### 4. Evaluate the Denoiser
+### 5. Evaluate the Denoiser
 
 ```bash
 # Evaluate on test image
@@ -94,7 +105,7 @@ Outputs:
 * Side-by-side comparison images saved to `results/`
 * `results/evaluation_summary.yaml`
 
-### 5. Train from Scratch (Optional)
+### 6. Train from Scratch (Optional)
 
 ```bash
 # Phase 1: Train the AutoEncoder denoiser
