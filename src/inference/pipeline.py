@@ -1,7 +1,14 @@
+import sys
+from pathlib import Path
+
+# Add src root to sys.path so models and data can be imported reliably
+src_root = str(Path(__file__).parent.parent)
+if src_root not in sys.path:
+    sys.path.insert(0, src_root)
+
 import torch
 import numpy as np
 import cv2
-from pathlib import Path
 
 from models.autoencoder import DenoisingAutoEncoder
 from models.classifier import MedicalImageClassifier
@@ -163,3 +170,39 @@ class DenoisingPipeline:
         print(f"Result saved to {out_path}")
 
         return str(out_path)
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="End-to-End Medical Image Denoising & Classification Pipeline")
+    parser.add_argument('--image', required=True, help='Path to input image')
+    parser.add_argument('--denoiser-checkpoint', default=None, help='Path to denoiser .pth checkpoint')
+    parser.add_argument('--classifier-checkpoint', default=None, help='Path to classifier .pth checkpoint')
+    parser.add_argument('--output-dir', default='results', help='Directory to save output image')
+    args = parser.parse_args()
+
+    # Discover checkpoints if not provided
+    logs_dir = Path('logs')
+    denoiser_ckpt = args.denoiser_checkpoint
+    if not denoiser_ckpt:
+        d_found = sorted(logs_dir.glob('autoencoder_best_psnr_*.pth'))
+        if d_found:
+            denoiser_ckpt = str(d_found[-1])
+
+    classifier_ckpt = args.classifier_checkpoint
+    if not classifier_ckpt:
+        c_found = sorted(logs_dir.glob('classifier_best_acc_*.pth'))
+        if c_found:
+            classifier_ckpt = str(c_found[-1])
+
+    pipeline = DenoisingPipeline(
+        denoiser_checkpoint=denoiser_ckpt,
+        classifier_checkpoint=classifier_ckpt
+    )
+    result = pipeline.run(args.image)
+    saved_path = pipeline.save_result(result, output_dir=args.output_dir)
+    print(f"✓ Pipeline execution completed successfully. Output: {saved_path}")
+
+
+if __name__ == '__main__':
+    main()

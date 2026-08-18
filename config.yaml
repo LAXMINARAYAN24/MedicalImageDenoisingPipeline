@@ -1,24 +1,65 @@
-# ─────────────────────────────────────────────
-# Medical Image Denoising Pipeline — config.yaml
-# ─────────────────────────────────────────────
+# Medical Image Denoising & Classification Pipeline Configuration
 
-model:
-  initial_filters: 32          # Base number of conv filters in AutoEncoder
-
-training:
-  num_epochs: 50
-  batch_size: 8
-  learning_rate: 0.001
-  weight_decay: 0.0001
-  lr_step_size: 10             # Halve LR every N epochs
-
+# ── Data paths ────────────────────────────────────────────────────────────────
 paths:
-  train_data_dir: datasets/raw/synthetic_medical   # Training images
-  val_data_dir:   datasets/raw/synthetic_medical   # Validation images (use CBSD68 when available)
-  results_dir:    results/
-  logs_dir:       logs/
+  train_data_dir:  'datasets/raw/synthetic_medical'
+  val_data_dir:    'datasets/raw/synthetic_medical'
+  results_dir:     'results'
+  logs_dir:        'logs'
+  checkpoint_dir:  'logs/checkpoints'
 
+# ── Model configuration ───────────────────────────────────────────────────────
+model:
+  # Top-level shortcut used by train.py / test.py
+  initial_filters: 32
+
+  autoencoder:
+    in_channels:     1
+    initial_filters: 32
+    architecture:    'unet_style'
+
+  classifier:
+    in_channels: 1
+    num_classes:  2
+    architecture: 'cnn'
+
+# ── Training configuration ────────────────────────────────────────────────────
+training:
+  batch_size:    16
+  num_epochs:    50
+  learning_rate: 0.001
+  weight_decay:  1.0e-5
+  lr_step_size:  10          # Halve LR every N epochs
+  gradient_clip: 1.0
+
+  # Data augmentation
+  augmentation:
+    noise_std:           25
+    enable_random_crops: false
+    enable_flips:        true
+
+# ── Data preprocessing ────────────────────────────────────────────────────────
 data:
-  image_size: 256
-  noise_std: 25                # Gaussian noise std dev added during preprocessing
-  num_workers: 4
+  image_size:  256
+  noise_std:   25            # Gaussian noise std dev added during preprocessing
+  num_workers: 0             # Use 0 on Windows to avoid DataLoader issues
+
+# ── Inference configuration ───────────────────────────────────────────────────
+inference:
+  device:        'cuda'      # 'cuda' or 'cpu'
+  batch_size:    32
+  output_format: 'png'
+  quantize_model: true
+  onnx_export:    true
+
+# ── Noise simulation ──────────────────────────────────────────────────────────
+noise:
+  gaussian_std:  25
+  poisson_noise: false
+  salt_pepper:   false
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  log_frequency: 10          # batches
+  save_interval: 5           # epochs
+  verbose:       true

@@ -1,8 +1,14 @@
+import argparse
+import sys
+from pathlib import Path
+
+# Add src to sys.path for direct script execution
+sys.path.insert(0, str(Path(__file__).parent))
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from pathlib import Path
 import yaml
 from tqdm import tqdm
 import numpy as np
@@ -47,12 +53,12 @@ class DenoisingTrainer:
             gamma=0.5
         )
 
-        self.best_psnr = 0
+        self.best_psnr = 0.0
         self.results_dir = Path(self.config['paths']['results_dir'])
         self.results_dir.mkdir(parents=True, exist_ok=True)
 
         # Create logs directory
-        self.logs_dir = Path('logs')
+        self.logs_dir = Path(self.config['paths'].get('logs_dir', 'logs'))
         self.logs_dir.mkdir(parents=True, exist_ok=True)
 
     def train_epoch(self, train_loader):
@@ -188,51 +194,72 @@ class DenoisingTrainer:
         """Load model from checkpoint"""
         checkpoint = torch.load(checkpoint_path,
                                 map_location=self.device)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
+        state = checkpoint.get('model_state_dict', checkpoint)
+        self.model.load_state_dict(state)
         print(f"Model loaded from {checkpoint_path}")
 
 
 def main():
     """Main training function"""
+    parser = argparse.ArgumentParser(description="Train Medical Image Denoising AutoEncoder")
+    parser.add_argument('--config', default='config.yaml', help='Path to configuration YAML file')
+    parser.add_argument('--epochs', type=int, default=None, help='Override number of epochs')
+    parser.add_argument('--batch-size', type=int, default=None, help='Override batch size')
+    parser.add_argument('--lr', type=float, default=None, help='Override learning rate')
+    parser.add_argument('--resume', default=None, help='Path to checkpoint to resume weights from')
+    args = parser.parse_args()
+
     # Load configuration
-    with open('config.yaml', 'r') as f:
+    with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
+
+    if args.epochs is not None:
+        config['training']['num_epochs'] = args.epochs
+    if args.batch_size is not None:
+        config['training']['batch_size'] = args.batch_size
+    if args.lr is not None:
+        config['training']['learning_rate'] = args.lr
 
     # Create datasets
     print("Loading datasets...")
     train_dataset = MedicalImageDataset(
         config['paths']['train_data_dir'],
-        noise_std=25
+        noise_std=config.get('data', {}).get('noise_std', 25)
     )
     val_dataset = MedicalImageDataset(
         config['paths']['val_data_dir'],
-        noise_std=25
+        noise_std=config.get('data', {}).get('noise_std', 25)
     )
+
+    num_workers = config.get('data', {}).get('num_workers', 0)
 
     train_loader = DataLoader(
         train_dataset,
         batch_size=config['training']['batch_size'],
         shuffle=True,
-        num_workers=4
+        num_workers=num_workers
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=config['training']['batch_size'],
         shuffle=False,
-        num_workers=4
+        num_workers=num_workers
     )
 
     print(f"Train samples: {len(train_dataset)}")
     print(f"Val samples:   {len(val_dataset)}")
 
     # Initialize trainer
-    trainer = DenoisingTrainer('config.yaml')
+    trainer = DenoisingTrainer(args.config)
+    if args.resume:
+        trainer.load_checkpoint(args.resume)
 
     # Train
+    num_epochs = config['training']['num_epochs']
     history = trainer.train(
         train_loader,
         val_loader,
-        num_epochs=config['training']['num_epochs']
+        num_epochs=num_epochs
     )
 
     print("\n" + "="*60)

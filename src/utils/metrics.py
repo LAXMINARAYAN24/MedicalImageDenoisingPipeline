@@ -47,3 +47,37 @@ def calculate_ssim(output: np.ndarray, target: np.ndarray) -> float:
         return float(np.mean(ssim_values))
     else:
         return float(ssim(output, target, data_range=255.0))
+
+
+def calculate_mse(img1: np.ndarray, img2: np.ndarray) -> float:
+    """Mean Squared Error between two arrays."""
+    return float(np.mean((img1.astype(np.float64) - img2.astype(np.float64)) ** 2))
+
+
+def calculate_mae(img1: np.ndarray, img2: np.ndarray) -> float:
+    """Mean Absolute Error between two arrays."""
+    return float(np.mean(np.abs(img1.astype(np.float64) - img2.astype(np.float64))))
+
+
+class MetricsCalculator:
+    """Convenience wrapper — compute all metrics in one call."""
+
+    @staticmethod
+    def compute_all_metrics(predicted: np.ndarray,
+                            ground_truth: np.ndarray) -> dict:
+        """
+        Compute PSNR, SSIM, MSE, and MAE.
+
+        Args:
+            predicted:    Model output array, values in [0, 255]
+            ground_truth: Ground-truth array, same shape, values in [0, 255]
+
+        Returns:
+            dict with keys: psnr, ssim, mse, mae
+        """
+        return {
+            'psnr': calculate_psnr(predicted, ground_truth),
+            'ssim': calculate_ssim(predicted, ground_truth),
+            'mse':  calculate_mse(predicted, ground_truth),
+            'mae':  calculate_mae(predicted, ground_truth),
+        }
