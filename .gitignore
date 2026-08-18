@@ -23,10 +23,10 @@ __pycache__/
 datasets/raw/CBSD68/
 datasets/raw/synthetic_medical/
 
-# Model checkpoints & results
+# Results directory
 results/
-logs/
-*.pth
+
+# Model exports
 *.onnx
 
 # IDE

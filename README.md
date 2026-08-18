@@ -39,10 +39,10 @@ MedicalImageDenoisingPipeline/
 
 ## ⚡ Quick Start
 
-### 1. Setup Environment
+### 1. Setup Environment (Python 3.12 Recommended)
 
 ```bash
-# Create & activate virtual environment
+# Create & activate virtual environment (Python 3.12)
 python -m venv venv
 venv\Scripts\activate          # Windows
 # source venv/bin/activate     # Linux / macOS
@@ -51,60 +51,57 @@ venv\Scripts\activate          # Windows
 pip install -r requirements.txt
 ```
 
-### 2. Generate Synthetic Dataset
+### 2. Pretrained Models Ready Out-of-the-Box 🚀
+
+Pretrained weights are included in the repository under [`logs/`](file:///c:/Users/sahul/Desktop/MedicalImageDenoisingPipeline/logs):
+* **Denoiser Checkpoint:** `logs/autoencoder_best_psnr_17.69.pth` (**17.69 dB PSNR**)
+* **Classifier Checkpoint:** `logs/classifier_best_acc_100.0.pth` (**100.0% Accuracy**)
+
+You do **not** need to retrain models to test inference or run evaluation!
+
+### 3. Run Full End-to-End Inference Pipeline
+
+Run denoising and classification on any medical image directly via CLI:
 
 ```bash
-python datasets/generate_synthetic.py
+python src/inference/pipeline.py --image datasets/raw/synthetic_medical/image_0000.png
 ```
 
-This creates **500 synthetic medical-like PNG images** in `datasets/raw/synthetic_medical/`.
-
-### 3. Train the Denoiser (AutoEncoder)
-
-```bash
-cd src
-python train.py
-```
-
-- Trains a **U-Net style AutoEncoder** for Gaussian noise removal
-- Saves best checkpoint to `logs/autoencoder_best_psnr_XX.XX.pth`
-- Metrics: **PSNR** and **SSIM** tracked per epoch
-
-### 4. Train the Classifier (CNN)
-
-```bash
-python src/train_classifier.py
-# Or with a specific denoiser checkpoint:
-python src/train_classifier.py --denoiser-checkpoint logs/autoencoder_best_psnr_XX.XX.pth
-```
-
-- Runs denoised images through the CNN to classify **Normal vs. Abnormal**
-- Saves best checkpoint to `logs/classifier_best_acc_XX.X.pth`
-
-### 5. Evaluate the Denoiser
-
-```bash
-python src/test.py
-# Single image mode:
-python src/test.py --image datasets/raw/synthetic_medical/image_0001.png
-```
-
-Outputs:
-- Per-metric summary (PSNR, SSIM, MSE, MAE)
-- Side-by-side comparison PNGs in `results/`
-- `results/evaluation_summary.yaml`
-
-### 6. Run Full Inference Pipeline
-
+Or via Python API:
 ```python
 from src.inference.pipeline import DenoisingPipeline
 
 pipeline = DenoisingPipeline(
-    denoiser_checkpoint='logs/autoencoder_best_psnr_XX.XX.pth',
-    classifier_checkpoint='logs/classifier_best_acc_XX.X.pth'
+    denoiser_checkpoint='logs/autoencoder_best_psnr_17.69.pth',
+    classifier_checkpoint='logs/classifier_best_acc_100.0.pth'
 )
-result = pipeline.run('path/to/image.png')
+result = pipeline.run('datasets/raw/synthetic_medical/image_0000.png')
 pipeline.save_result(result, output_dir='results/')
+```
+
+### 4. Evaluate the Denoiser
+
+```bash
+# Evaluate on test image
+python src/test.py --image datasets/raw/synthetic_medical/image_0000.png
+
+# Evaluate on full validation dataset
+python src/test.py
+```
+
+Outputs:
+* Metrics summary: **PSNR**, **SSIM**, **MSE**, **MAE**
+* Side-by-side comparison images saved to `results/`
+* `results/evaluation_summary.yaml`
+
+### 5. Train from Scratch (Optional)
+
+```bash
+# Phase 1: Train the AutoEncoder denoiser
+python src/train.py --epochs 50
+
+# Phase 2: Train the CNN classifier on denoised outputs
+python src/train_classifier.py
 ```
 
 ---
